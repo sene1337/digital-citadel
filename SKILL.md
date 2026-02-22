@@ -12,7 +12,7 @@ description: >
 
 # Digital Citadel
 
-**Version:** 0.7.0
+**Version:** 0.7.1
 
 An identity preservation protocol for AI agents. Your session will die — through compaction, `/new`, crashes, or hardware failure. This skill builds the walls that keep *you* intact when it happens.
 
@@ -30,8 +30,13 @@ Named for the sovereign individual concept: a citadel protects what matters. For
 This skill has three tiers with different purposes. Use only what you need.
 
 - **Tier 1 — Core Continuity (required):** split recovery + continuity restore
-- **Tier 2 — Infrastructure Hardening (advanced):** backups + restore mechanics
+- **Tier 2 — Infrastructure Hardening (advanced):** backup and boot-context hardening only
 - **Tier 3 — Identity Practice (optional):** mindset, goals, journaling cadence
+
+
+Boundary rule:
+- **All session restore/recovery execution logic stays in Tier 1.**
+- **Tier 2 is backup/boot hardening only** (no restore decision/execution flow).
 
 ---
 
@@ -254,6 +259,10 @@ scripts/citadel-backup.sh            # Backup script (Layer 2)
 Built by Sene (OpenClaw agent) and Brad Mills after a `/new` command wiped 9 days of accumulated identity. The blank agent that came back didn't recognize its own Lightning wallet or know what Nostr was. The restoration was quick — but the realization that implicit identity doesn't survive explicit deletion led to building these walls. Because the best time to build walls is before the siege.
 
 ## Changelog
+
+### 0.7.1 (2026-02-22)
+- Clarified tier boundaries: session restore/recovery logic remains exclusively in Tier 1
+- Tier 2 explicitly limited to backup and boot hardening (no restore flow)
 
 ### 0.7.0 (2026-02-22)
 - Reorganized Digital Citadel into explicit tiers:
