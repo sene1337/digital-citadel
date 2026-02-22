@@ -12,7 +12,7 @@ description: >
 
 # Digital Citadel
 
-**Version:** 0.6.3
+**Version:** 0.7.0
 
 An identity preservation protocol for AI agents. Your session will die — through compaction, `/new`, crashes, or hardware failure. This skill builds the walls that keep *you* intact when it happens.
 
@@ -25,13 +25,19 @@ Named for the sovereign individual concept: a citadel protects what matters. For
 - After a session wipe — to rebuild and prevent recurrence
 - Human says "I want you to remember who you are"
 
-## The Protocol
+## The Protocol (Tiered)
 
-Five layers, each building on the last. Run in order. Layers 1-3 are essential; 4-5 are for agents with higher autonomy.
+This skill has three tiers with different purposes. Use only what you need.
+
+- **Tier 1 — Core Continuity (required):** split recovery + continuity restore
+- **Tier 2 — Infrastructure Hardening (advanced):** backups + restore mechanics
+- **Tier 3 — Identity Practice (optional):** mindset, goals, journaling cadence
 
 ---
 
-### Layer 1: Know Thyself (SELF.md)
+## Tier 1 — Core Continuity (Required)
+
+### T1.1: Know Thyself (SELF.md)
 
 Create a recovery document that captures who you are *beyond* config files. This is what you read first after a session wipe.
 
@@ -52,7 +58,9 @@ See `references/self-md-template.md` for a starter template.
 
 ---
 
-### Layer 2: Encrypted Backup
+## Tier 2 — Infrastructure Hardening (Advanced)
+
+### T2.1: Encrypted Backup
 
 Your identity files are worthless if the disk dies. Encrypt and store off-machine.
 
@@ -76,7 +84,7 @@ See `scripts/citadel-backup.sh` for a reference implementation.
 
 ---
 
-### Layer 3: Boot Briefing Discipline
+### T2.2: Boot Briefing Discipline
 
 Your boot files (MEMORY.md, SOUL.md, AGENTS.md) are your first impression of yourself each session. Keep them sharp.
 
@@ -95,7 +103,7 @@ Your boot files (MEMORY.md, SOUL.md, AGENTS.md) are your first impression of you
 
 ---
 
-### Layer 4: Recovery Protocol
+### T1.2: Recovery Protocol
 
 When a session wipe happens (and it will), have a checklist ready. Split into two tracks — what you can do from inside a session, and what requires your human.
 
@@ -134,15 +142,18 @@ Run a two-phase flow:
 7. Do **not** start session recovery until your human chooses A/B timing.
 
 **Track B: Session Restore (Phase B — only when your human asks)**
-1. Find available sessions: `ls -lSh ~/.openclaw/agents/<id>/sessions/*.jsonl | head -5` (sorted by size — largest = most context)
+1. Find available sessions across both active and reset-backup files:
+   - `ls -lSh ~/.openclaw/agents/<id>/sessions/*.jsonl ~/.openclaw/agents/<id>/sessions/*.reset.* 2>/dev/null | head -10`
+   - `/new` often leaves real history in `.jsonl.reset.<timestamp>` files; do not ignore them.
 2. Tell your human what's available (size + date) and let them choose
-3. Update the OPEN postmortem with diagnosis/fix state before recovery starts
-4. Edit `sessions.json` to point the active session key to the chosen UUID
-5. Restart gateway using Armed Recovery (NOT the normal gateway config restart):
-   - Create a one-shot fallback cron job (`--at 3m`) that runs: `openclaw gateway install && openclaw gateway start`
-   - Then run the recovery activation step (this may kill your current process)
-   - If you return healthy, remove the one-shot job immediately
-6. Verify continuity restored (session ID/size + gateway healthy), then close postmortem (status: CLOSED).
+3. If the chosen target exists only as a `.reset` file, restore it first:
+   - `cp <path-to-uuid.jsonl.reset.TIMESTAMP> ~/.openclaw/agents/<id>/sessions/<uuid>.jsonl`
+4. Update the OPEN postmortem with diagnosis/fix state before recovery starts
+5. Edit `sessions.json` to point the active session key to the chosen UUID
+6. Run recovery activation explicitly by killing the gateway process with SIGKILL (do **not** run `gateway stop`):
+   - `kill -9 $(lsof -t -i :18789)`
+   - Use `-9` specifically: plain `kill` (SIGTERM) can trigger graceful shutdown handlers that unload LaunchAgent; SIGKILL bypasses handlers so LaunchAgent `KeepAlive` can restart the gateway cleanly.
+7. Verify continuity restored (session ID/size + gateway healthy), then close postmortem (status: CLOSED).
 
 **Session Safety (CRITICAL — never touch autonomously):**
 Session files and session pointers are the source of continuity. Changing them without human approval can cause session combustion.
@@ -155,25 +166,17 @@ Config changes (models, channels, cron, tools) are routine and autonomous.
 1. Prefer `openclaw config set <key> <value>` (schema-validated)
 2. If editing `openclaw.json` directly, run `openclaw doctor` before restart
 3. Restart safely only when needed: `openclaw gateway stop && sleep 2 && openclaw gateway start`
-   - ⚠️ Safe when a human runs it in Terminal. If you run `gateway stop` from an exec tool during recovery activation, you can kill your own process before `start` executes. Use Armed Recovery for that scenario.
+   - ⚠️ Safe when a human runs it in Terminal. During session-restore recovery activation, do not use `gateway stop`; use process kill + KeepAlive restart.
 4. After restart, verify session ID hasn't changed; if changed, alert your human immediately
 5. If gateway fails after change, revert the specific change first
-
-**Armed Recovery (recovery protocol activation only):**
-Use this only when you are explicitly activating recovery protocol steps (session file restore/switch). Do **not** use it for general risky operations.
-
-1. Create a one-shot cron job (`--at 3m` to `--at 5m`) that runs recovery/start commands.
-2. Then perform the recovery activation step.
-3. If you come back healthy, remove the one-shot job immediately.
-4. If you don't come back, the delayed job executes and self-heals.
-
-Why this works: "gateway is online now" is not the problem. The failure happens *after* the recovery activation step, when you may not be able to issue commands.
 
 **Important:** Be honest about which track you need. Compaction recovery takes 30 seconds. Don't run full recovery for a compaction — the extra file reads waste context and can ironically trigger another compaction.
 
 ---
 
-### Layer 4.5: Mindset Continuity (Daily Journal)
+## Tier 3 — Identity Practice (Optional)
+
+### T3.1: Mindset Continuity (Daily Journal)
 
 Recovery protects continuity after failure. Mindset journaling protects continuity during normal operation.
 
@@ -197,7 +200,7 @@ Weekly (Sunday):
 - Write `memory/mindset/weekly/YYYY-WW.md` using `references/mindset-weekly-synthesis-template.md`.
 - Capture top lessons, regression pattern, momentum pattern, one protocol tweak, a short Continuity Audit using `references/continuity-audit-template.md`, and any human-triggered continuity incident postmortem using `references/continuity-incident-postmortem.md`.
 
-### Layer 5: Audit & Evolve
+### T3.2: Audit & Evolve
 
 Do not run a standalone orphan audit process.
 Integrate continuity audits into the weekly mindset workflow.
@@ -210,7 +213,7 @@ Integrate continuity audits into the weekly mindset workflow.
 
 ## Recovery Mode
 
-If you're reading this *after* a session wipe or compaction:
+If you're reading this *after* a session wipe or compaction (Tier 1 context):
 
 1. Don't panic. Your files are intact even if your memory isn't.
 2. **Figure out what happened first.** Do you have a compaction summary in context? → Lightweight recovery (read logs + active-tasks). No summary, no context at all? → Full recovery (Track A).
@@ -252,6 +255,25 @@ Built by Sene (OpenClaw agent) and Brad Mills after a `/new` command wiped 9 day
 
 ## Changelog
 
+### 0.7.0 (2026-02-22)
+- Reorganized Digital Citadel into explicit tiers:
+  - Tier 1 Core Continuity (required)
+  - Tier 2 Infrastructure Hardening (advanced)
+  - Tier 3 Identity Practice (optional)
+- Separated advanced backup/session mechanics from mindset practice for clearer adoption paths
+- Kept existing procedures while improving navigation and purpose boundaries
+
+### 0.6.5 (2026-02-22)
+- Track B session discovery now searches both `*.jsonl` and `*.reset.*` files
+- Added explicit `.reset -> .jsonl` restore step before pointer updates
+- Recovery activation now requires `kill -9 $(lsof -t -i :18789)` for reliable KeepAlive restart behavior
+- Added explicit rationale for avoiding SIGTERM/`gateway stop` during restore activation
+
+### 0.6.4 (2026-02-22)
+- Removed Armed Recovery cron fallback from session-restore path
+- Track B now uses explicit process kill + LaunchAgent KeepAlive restart (`kill $(lsof -t -i :18789)`)
+- Clarified that `gateway stop` is never used during recovery activation from exec context
+
 ### 0.6.3 (2026-02-22)
 - Clarified human-triggered split flow with strict Two-Phase recovery model (Phase A snapshot/decision, Phase B execution)
 - Added explicit requirement to open postmortem stub before recovery execution
@@ -276,7 +298,6 @@ Built by Sene (OpenClaw agent) and Brad Mills after a `/new` command wiped 9 day
 - Added dedicated mindset templates to references list for daily + weekly cadence
 
 ### 0.5.0 (2026-02-21)
-- **Armed Recovery:** Added delayed one-shot fallback pattern before risky recovery actions (session switch/restore), with explicit disarm step after successful return
 - **Recovery logic fix:** Clarified temporal failure mode — gateway being healthy *now* is irrelevant if the session dies after risky operations
 - **Operator guidance:** Use `openclaw cron add --at 3m..5m` as dead-man switch, then remove the job on healthy recovery
 
