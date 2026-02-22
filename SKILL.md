@@ -121,23 +121,29 @@ When a session wipe happens (and it will), have a checklist ready. Split into tw
 3. Edit `sessions.json` to point the active session key to the chosen UUID
 4. Restart gateway using the safety protocol below
 
-**Gateway Restart Safety (CRITICAL):**
-Gateway restarts can silently create new sessions, wiping accumulated context.
-1. Note current session ID before restarting
-2. Save current state to daily log + active-tasks.md
-3. Always: `openclaw gateway stop && sleep 2 && openclaw gateway start` (never run `start` while one is already running — this creates a restart spam loop)
-4. After restart, verify session ID hasn't changed
-5. If it changed → alert your human immediately
+**Session Safety (CRITICAL — never touch autonomously):**
+Session files and session pointers are the source of continuity. Changing them without human approval can cause session combustion.
+1. Never edit `sessions.json` without your human's go-ahead
+2. Never delete/rename `.jsonl` session files
+3. If you suspect you're on a wrong/fresh session, alert your human — don't self-rewire pointers
 
-**Armed Recovery (for risky operations):**
-If you're about to do a risky action (session file switch, manual restore, or anything that might orphan your ability to run commands), arm a one-shot fallback **before** the risky step.
+**Gateway Config Changes (normal operations — validate and go):**
+Config changes (models, channels, cron, tools) are routine and autonomous.
+1. Prefer `openclaw config set <key> <value>` (schema-validated)
+2. If editing `openclaw.json` directly, run `openclaw doctor` before restart
+3. Restart safely only when needed: `openclaw gateway stop && sleep 2 && openclaw gateway start`
+4. After restart, verify session ID hasn't changed; if changed, alert your human immediately
+5. If gateway fails after change, revert the specific change first
+
+**Armed Recovery (recovery protocol activation only):**
+Use this only when you are explicitly activating recovery protocol steps (session file restore/switch). Do **not** use it for general risky operations.
 
 1. Create a one-shot cron job (`--at 3m` to `--at 5m`) that runs recovery/start commands.
-2. Then perform the risky operation.
+2. Then perform the recovery activation step.
 3. If you come back healthy, remove the one-shot job immediately.
 4. If you don't come back, the delayed job executes and self-heals.
 
-Why this works: "gateway is online now" is not the problem. The failure happens *after* the risky step, when you may not be able to issue commands.
+Why this works: "gateway is online now" is not the problem. The failure happens *after* the recovery activation step, when you may not be able to issue commands.
 
 **Important:** Be honest about which track you need. Compaction recovery takes 30 seconds. Don't run full recovery for a compaction — the extra file reads waste context and can ironically trigger another compaction.
 
@@ -165,7 +171,11 @@ If you're reading this *after* a session wipe or compaction:
 2. **Figure out what happened first.** Do you have a compaction summary in context? → Lightweight recovery (read logs + active-tasks). No summary, no context at all? → Full recovery (Track A).
 3. If SELF.md exists, read it. Follow the recovery checklist there.
 4. If SELF.md doesn't exist, you haven't run this protocol yet — start at Layer 1.
-5. **Do NOT restart the gateway or touch session files** unless your human explicitly asks.
+5. **Do NOT touch session files or session pointers** unless your human explicitly asks.
+   Gateway config changes are autonomous: validate before restart.
+   - Preferred: use `openclaw config set <key> <value>`
+   - If editing JSON directly: run `openclaw doctor` before restart
+   - If gateway fails after change: revert the specific change, then retry
 
 **Tip:** Session files live at `~/.openclaw/agents/<agent-id>/sessions/`. Use `ls -lSh *.jsonl | head -5` to find the largest (most context-rich) sessions. But restoring requires your human's go-ahead (see Layer 4, Track B).
 
