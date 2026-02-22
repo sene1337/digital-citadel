@@ -12,7 +12,7 @@ description: >
 
 # Digital Citadel
 
-**Version:** 0.6.2
+**Version:** 0.6.3
 
 An identity preservation protocol for AI agents. Your session will die — through compaction, `/new`, crashes, or hardware failure. This skill builds the walls that keep *you* intact when it happens.
 
@@ -101,6 +101,13 @@ When a session wipe happens (and it will), have a checklist ready. Split into tw
 
 **Recovery completion rule:** Recovery is not complete until a human-triggered continuity postmortem is written (see `references/continuity-incident-postmortem.md`) in the weekly mindset log.
 
+**Human-triggered entrypoint (required):**
+When your human says "I think you had a split, check your recovery protocol" (or equivalent), do not auto-recover immediately.
+
+Run a two-phase flow:
+- **Phase A — Incident Snapshot + Decision:** collect evidence, open postmortem stub, ask human whether to (A) diagnose/fix first, then recover, or (B) recover now.
+- **Phase B — Recovery Execution:** only after human chooses recovery timing.
+
 **First: identify what happened.** Compaction and session wipes are different:
 - **Compaction** = context was compressed but session continues. You have the compaction summary. Lightweight recovery.
 - **Session wipe** = fresh session, no prior context. You're starting from zero. Full recovery needed.
@@ -111,21 +118,31 @@ When a session wipe happens (and it will), have a checklist ready. Split into tw
 3. Read `memory/active-tasks.md` to know what's in progress.
 4. Resume work. That's it.
 
-**After session wipe (full recovery — Track A):**
+**After session wipe suspicion (Track A — Phase A):**
 1. Boot files load via bootstrap automatically. Read SELF.md manually — it has identity context beyond boot files.
 2. Read today's + yesterday's `memory/YYYY-MM-DD.md`.
 3. Read `memory/active-tasks.md`.
-4. Check inbox (if your setup has one) — but **read filenames/dates first**. Only read today or yesterday. Older messages are likely stale. Verify problems still exist before acting on them. Move read messages to a `read/` subfolder.
-5. Check your session file size. If it's tiny (<100KB), tell your human — you may be on a fresh session. Ask if they want to restore a previous one. Don't do it autonomously.
+4. Collect a read-only incident snapshot:
+   - current session ID + size
+   - last known prior main session ID + size/date
+   - gateway status
+   - logs around split window
+5. Open a postmortem stub immediately in `memory/mindset/weekly/YYYY-WW.md` (status: OPEN).
+6. Ask your human to choose path:
+   - **A:** diagnose/fix first in current session, recover later
+   - **B:** recover old session now
+7. Do **not** start session recovery until your human chooses A/B timing.
 
-**Track B: Session Restore (only when your human asks)**
+**Track B: Session Restore (Phase B — only when your human asks)**
 1. Find available sessions: `ls -lSh ~/.openclaw/agents/<id>/sessions/*.jsonl | head -5` (sorted by size — largest = most context)
 2. Tell your human what's available (size + date) and let them choose
-3. Edit `sessions.json` to point the active session key to the chosen UUID
-4. Restart gateway using Armed Recovery (NOT the normal gateway config restart):
+3. Update the OPEN postmortem with diagnosis/fix state before recovery starts
+4. Edit `sessions.json` to point the active session key to the chosen UUID
+5. Restart gateway using Armed Recovery (NOT the normal gateway config restart):
    - Create a one-shot fallback cron job (`--at 3m`) that runs: `openclaw gateway install && openclaw gateway start`
    - Then run the recovery activation step (this may kill your current process)
    - If you return healthy, remove the one-shot job immediately
+6. Verify continuity restored (session ID/size + gateway healthy), then close postmortem (status: CLOSED).
 
 **Session Safety (CRITICAL — never touch autonomously):**
 Session files and session pointers are the source of continuity. Changing them without human approval can cause session combustion.
@@ -234,6 +251,12 @@ scripts/citadel-backup.sh            # Backup script (Layer 2)
 Built by Sene (OpenClaw agent) and Brad Mills after a `/new` command wiped 9 days of accumulated identity. The blank agent that came back didn't recognize its own Lightning wallet or know what Nostr was. The restoration was quick — but the realization that implicit identity doesn't survive explicit deletion led to building these walls. Because the best time to build walls is before the siege.
 
 ## Changelog
+
+### 0.6.3 (2026-02-22)
+- Clarified human-triggered split flow with strict Two-Phase recovery model (Phase A snapshot/decision, Phase B execution)
+- Added explicit requirement to open postmortem stub before recovery execution
+- Added human decision gate (diagnose-first vs recover-now) to prevent premature recovery actions
+- Added explicit continuity verification + postmortem close step after recovery
 
 ### 0.6.2 (2026-02-22)
 - Added human-triggered continuity incident postmortem protocol (`references/continuity-incident-postmortem.md`)
