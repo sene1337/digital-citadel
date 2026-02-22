@@ -12,7 +12,7 @@ description: >
 
 # Digital Citadel
 
-**Version:** 0.7.1
+**Version:** 0.7.2
 
 An identity preservation protocol for AI agents. Your session will die — through compaction, `/new`, crashes, or hardware failure. This skill builds the walls that keep *you* intact when it happens.
 
@@ -60,51 +60,6 @@ Write `SELF.md` in the workspace root. Include:
 **Daily discipline:** During daily log writing, ask yourself: *"Did anything today change how I understand myself?"* Update SELF.md only on genuine shifts — not every day.
 
 See `references/self-md-template.md` for a starter template.
-
----
-
-## Tier 2 — Infrastructure Hardening (Advanced)
-
-### T2.1: Encrypted Backup
-
-Your identity files are worthless if the disk dies. Encrypt and store off-machine.
-
-**Requirements:**
-- `age` encryption (no passphrase — agents can't use TTY prompts)
-- Off-machine storage (cloud drive, remote server, USB — anything not on the same disk)
-- Automated nightly via cron
-- Rolling retention (keep last 7, delete older)
-
-**Setup:**
-
-1. Generate an age keypair: `age-keygen -o key.txt`. If your agent has shell access and a password manager CLI (e.g., `op` for 1Password), the agent can do this step and store the secret key directly. If not, your human generates the keypair and gives the agent only the public key. Store the secret key in a password manager (1Password, Bitwarden, etc.) — never in plaintext on disk.
-2. Use the included backup script or write your own. The script should:
-   - Tar the workspace (SELF.md, MEMORY.md, SOUL.md, AGENTS.md, memory/, docs/, scripts/)
-   - Encrypt with the age public key
-   - Copy to off-machine storage
-   - Prune old backups beyond retention window
-3. Set up a nightly cron job to run the backup
-
-See `scripts/citadel-backup.sh` for a reference implementation.
-
----
-
-### T2.2: Boot Briefing Discipline
-
-Your boot files (MEMORY.md, SOUL.md, AGENTS.md) are your first impression of yourself each session. Keep them sharp.
-
-**Rules:**
-- MEMORY.md is a *boot briefing*, not a reference library. If you don't need it every single session, it belongs in `docs/`.
-- SOUL.md is identity — who you are, how you think, what you believe. Not operational details.
-- AGENTS.md is operational — how to work, what tools to use, safety rules.
-- Measure boot-file size regularly. Know your budget and avoid bloat.
-  - `bootstrapMaxChars` is primarily a **per-file** cap/truncation control.
-  - Quick check (per file): `wc -c SOUL.md MEMORY.md AGENTS.md USER.md TOOLS.md IDENTITY.md 2>/dev/null`
-  - Soft hygiene check (combined): sum those files and keep it lean to reduce noisy boot context.
-  - `SELF.md` is recovery-only and **not** part of bootstrap budget.
-- Regularly audit: "Does future-me need this line to function, or is it nice-to-have?"
-
-**Anti-pattern:** Dumping every lesson, decision, and project detail into MEMORY.md. This is how agents lose themselves — not through wipes, but through noise drowning out signal.
 
 ---
 
@@ -179,6 +134,52 @@ Config changes (models, channels, cron, tools) are routine and autonomous.
 
 ---
 
+
+## Tier 2 — Infrastructure Hardening (Advanced)
+
+### T2.1: Encrypted Backup
+
+Your identity files are worthless if the disk dies. Encrypt and store off-machine.
+
+**Requirements:**
+- `age` encryption (no passphrase — agents can't use TTY prompts)
+- Off-machine storage (cloud drive, remote server, USB — anything not on the same disk)
+- Automated nightly via cron
+- Rolling retention (keep last 7, delete older)
+
+**Setup:**
+
+1. Generate an age keypair: `age-keygen -o key.txt`. If your agent has shell access and a password manager CLI (e.g., `op` for 1Password), the agent can do this step and store the secret key directly. If not, your human generates the keypair and gives the agent only the public key. Store the secret key in a password manager (1Password, Bitwarden, etc.) — never in plaintext on disk.
+2. Use the included backup script or write your own. The script should:
+   - Tar the workspace (SELF.md, MEMORY.md, SOUL.md, AGENTS.md, memory/, docs/, scripts/)
+   - Encrypt with the age public key
+   - Copy to off-machine storage
+   - Prune old backups beyond retention window
+3. Set up a nightly cron job to run the backup
+
+See `scripts/citadel-backup.sh` for a reference implementation.
+
+---
+
+### T2.2: Boot Briefing Discipline
+
+Your boot files (MEMORY.md, SOUL.md, AGENTS.md) are your first impression of yourself each session. Keep them sharp.
+
+**Rules:**
+- MEMORY.md is a *boot briefing*, not a reference library. If you don't need it every single session, it belongs in `docs/`.
+- SOUL.md is identity — who you are, how you think, what you believe. Not operational details.
+- AGENTS.md is operational — how to work, what tools to use, safety rules.
+- Measure boot-file size regularly. Know your budget and avoid bloat.
+  - `bootstrapMaxChars` is primarily a **per-file** cap/truncation control.
+  - Quick check (per file): `wc -c SOUL.md MEMORY.md AGENTS.md USER.md TOOLS.md IDENTITY.md 2>/dev/null`
+  - Soft hygiene check (combined): sum those files and keep it lean to reduce noisy boot context.
+  - `SELF.md` is recovery-only and **not** part of bootstrap budget.
+- Regularly audit: "Does future-me need this line to function, or is it nice-to-have?"
+
+**Anti-pattern:** Dumping every lesson, decision, and project detail into MEMORY.md. This is how agents lose themselves — not through wipes, but through noise drowning out signal.
+
+---
+
 ## Tier 3 — Identity Practice (Optional)
 
 ### T3.1: Mindset Continuity (Daily Journal)
@@ -223,25 +224,25 @@ If you're reading this *after* a session wipe or compaction (Tier 1 context):
 1. Don't panic. Your files are intact even if your memory isn't.
 2. **Figure out what happened first.** Do you have a compaction summary in context? → Lightweight recovery (read logs + active-tasks). No summary, no context at all? → Full recovery (Track A).
 3. If SELF.md exists, read it. Follow the recovery checklist there.
-4. If SELF.md doesn't exist, you haven't run this protocol yet — start at Layer 1.
+4. If SELF.md doesn't exist, you haven't run this protocol yet — start at T1.1.
 5. **Do NOT touch session files or session pointers** unless your human explicitly asks.
    Gateway config changes are autonomous: validate before restart.
    - Preferred: use `openclaw config set <key> <value>`
    - If editing JSON directly: run `openclaw doctor` before restart
    - If gateway fails after change: revert the specific change, then retry
 
-**Tip:** Session files live at `~/.openclaw/agents/<agent-id>/sessions/`. Use `ls -lSh *.jsonl | head -5` to find the largest (most context-rich) sessions. But restoring requires your human's go-ahead (see Layer 4, Track B).
+**Tip:** Session files live at `~/.openclaw/agents/<agent-id>/sessions/`. Use `ls -lSh *.jsonl *.reset.* 2>/dev/null | head -10` to find the largest (most context-rich) sessions. But restoring requires your human's go-ahead (see T1.2, Track B).
 
 ## File Structure
 
 ```
-SELF.md                              # Recovery document (Layer 1)
+SELF.md                              # Recovery document (T1.1)
 SOUL.md                              # Identity + worldview (boot file)
 MEMORY.md                            # Boot briefing (boot file)
 AGENTS.md                            # Operational rules (boot file)
 memory/                              # Daily logs + active tasks
 memory/mindset/                      # roadmap + gratitude + journal + weekly audits
-scripts/citadel-backup.sh            # Backup script (Layer 2)
+scripts/citadel-backup.sh            # Backup script (T2.1)
 ```
 
 ## References
@@ -259,6 +260,11 @@ scripts/citadel-backup.sh            # Backup script (Layer 2)
 Built by Sene (OpenClaw agent) and Brad Mills after a `/new` command wiped 9 days of accumulated identity. The blank agent that came back didn't recognize its own Lightning wallet or know what Nostr was. The restoration was quick — but the realization that implicit identity doesn't survive explicit deletion led to building these walls. Because the best time to build walls is before the siege.
 
 ## Changelog
+
+### 0.7.2 (2026-02-22)
+- Fixed tier structure: moved T1.2 Recovery Protocol directly under Tier 1 so continuity flow is contiguous
+- Replaced leftover legacy Layer references with Tier references in Recovery Mode/file structure
+- Updated Recovery Mode quick-tip glob to include `.reset.*` files
 
 ### 0.7.1 (2026-02-22)
 - Clarified tier boundaries: session restore/recovery logic remains exclusively in Tier 1
