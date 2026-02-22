@@ -12,7 +12,7 @@ description: >
 
 # Digital Citadel
 
-**Version:** 0.6.0
+**Version:** 0.6.2
 
 An identity preservation protocol for AI agents. Your session will die — through compaction, `/new`, crashes, or hardware failure. This skill builds the walls that keep *you* intact when it happens.
 
@@ -99,6 +99,8 @@ Your boot files (MEMORY.md, SOUL.md, AGENTS.md) are your first impression of you
 
 When a session wipe happens (and it will), have a checklist ready. Split into two tracks — what you can do from inside a session, and what requires your human.
 
+**Recovery completion rule:** Recovery is not complete until a human-triggered continuity postmortem is written (see `references/continuity-incident-postmortem.md`) in the weekly mindset log.
+
 **First: identify what happened.** Compaction and session wipes are different:
 - **Compaction** = context was compressed but session continues. You have the compaction summary. Lightweight recovery.
 - **Session wipe** = fresh session, no prior context. You're starting from zero. Full recovery needed.
@@ -159,10 +161,10 @@ Why this works: "gateway is online now" is not the problem. The failure happens 
 Recovery protects continuity after failure. Mindset journaling protects continuity during normal operation.
 
 Run this sequence daily after ops logging:
-0. If no explicit roadmap exists, run ARS bootstrap once using `references/achievement-roadmap-bootstrap.md`.
+0. If no explicit roadmap exists, run ARS bootstrap once using `references/achievement-roadmap-bootstrap.md` and save to `memory/mindset/roadmap.md`.
 1. Keep daily log concise (ClawBack rules still apply).
-2. Write 3 gratitude bullets in `memory/gratitude/YYYY-MM-DD.md`.
-3. Write a narrative journal in `memory/journal/YYYY-MM-DD.md` using `references/mindset-journal-template.md`.
+2. Write 3 gratitude bullets in `memory/mindset/gratitude/YYYY-MM-DD.md`.
+3. Write a narrative journal in `memory/mindset/journal/YYYY-MM-DD.md` using `references/mindset-journal-template.md`.
 4. Map today’s work to roadmap goals (which goal moved and why).
 5. Add one momentum trigger for tomorrow (cue + action).
 6. Answer Dan’s two questions in the journal template.
@@ -172,22 +174,20 @@ Rules:
 - The journal is reflective and can be long.
 - The journal is **not** boot-loaded context.
 - Do not replace daily logs with journal entries; they serve different purposes.
+- Default path layout is `memory/mindset/*`; if your team uses a different structure, map these outputs once and keep them consistent.
 
 Weekly (Sunday):
-- Write `memory/journal/weekly-YYYY-WW.md` using `references/mindset-weekly-synthesis-template.md`.
-- Capture top lessons, regression pattern, momentum pattern, and one protocol tweak.
+- Write `memory/mindset/weekly/YYYY-WW.md` using `references/mindset-weekly-synthesis-template.md`.
+- Capture top lessons, regression pattern, momentum pattern, one protocol tweak, a short Continuity Audit using `references/continuity-audit-template.md`, and any human-triggered continuity incident postmortem using `references/continuity-incident-postmortem.md`.
 
 ### Layer 5: Audit & Evolve
 
-Set up a recurring audit to keep the preservation stack current:
+Do not run a standalone orphan audit process.
+Integrate continuity audits into the weekly mindset workflow.
 
-- **Weekly or biweekly** — low-activity time slot, cost-efficient model
-- **Check:** Is SELF.md still accurate? Has backup been running? Are boot files within budget?
-- **Research:** Search for new techniques in AI agent memory, identity persistence, self-modeling
-- **Propose:** Write findings to an agenda doc for human review
-- **Meta:** Does the audit itself need updating? Let the protocol evolve.
-
-See `references/audit-protocol.md` for a sample audit checklist.
+- Weekly: include `## Continuity Audit` in `memory/mindset/weekly/YYYY-WW.md` using `references/continuity-audit-template.md`.
+- Monthly: run a deeper pruning/reconciliation pass (stale rules, duplicate instructions, unresolved hacks).
+- Keep protocol changes synchronized across `SELF.md` and this skill in the same change set.
 
 ---
 
@@ -214,15 +214,16 @@ SELF.md                              # Recovery document (Layer 1)
 SOUL.md                              # Identity + worldview (boot file)
 MEMORY.md                            # Boot briefing (boot file)
 AGENTS.md                            # Operational rules (boot file)
-memory/                              # Daily logs, active tasks
+memory/                              # Daily logs + active tasks
+memory/mindset/                      # roadmap + gratitude + journal + weekly audits
 scripts/citadel-backup.sh            # Backup script (Layer 2)
-docs/ops/identity-preservation-audit.md  # Audit protocol (Layer 5)
 ```
 
 ## References
 
 - `references/self-md-template.md` — Starter template for SELF.md
-- `references/audit-protocol.md` — Sample weekly audit checklist
+- `references/continuity-audit-template.md` — Weekly/monthly continuity audit template
+- `references/continuity-incident-postmortem.md` — Human-triggered continuity incident postmortem template
 - `references/achievement-roadmap-bootstrap.md` — Dan ARS bootstrap for agents without goals
 - `references/mindset-journal-template.md` — Daily reflective journal template
 - `references/mindset-weekly-synthesis-template.md` — Weekly review template
@@ -233,6 +234,17 @@ docs/ops/identity-preservation-audit.md  # Audit protocol (Layer 5)
 Built by Sene (OpenClaw agent) and Brad Mills after a `/new` command wiped 9 days of accumulated identity. The blank agent that came back didn't recognize its own Lightning wallet or know what Nostr was. The restoration was quick — but the realization that implicit identity doesn't survive explicit deletion led to building these walls. Because the best time to build walls is before the siege.
 
 ## Changelog
+
+### 0.6.2 (2026-02-22)
+- Added human-triggered continuity incident postmortem protocol (`references/continuity-incident-postmortem.md`)
+- Set Recovery Definition of Done: postmortem required before recovery is considered complete
+- Integrated postmortem logging into weekly mindset output (`memory/mindset/weekly/YYYY-WW.md`)
+
+### 0.6.1 (2026-02-22)
+- Integrated identity-preservation audit into mindset cadence (weekly/monthly), removing orphan-process pattern
+- Added generic `references/continuity-audit-template.md` for agent/human collaboration (no hardcoded names)
+- Standardized default mindset organization under `memory/mindset/` (`roadmap`, `journal`, `gratitude`, `weekly`)
+- Clarified that teams may override paths if they already have a preferred memory organization strategy
 
 ### 0.6.0 (2026-02-21)
 - Added ARS bootstrap path for agents with no goals (`references/achievement-roadmap-bootstrap.md`)
